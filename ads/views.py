@@ -24,7 +24,7 @@ class CategoriesListCreate(ListView, CreateView):
         return JsonResponse([{
             'id': cat.pk,
             'name': cat.name,
-        } for cat in self.get_queryset()], safe=False)
+        } for cat in self.get_queryset().order_by('name')], safe=False)
 
     def post(self, request, *args, **kwargs):
         category_data = json.loads(request.body)
@@ -76,7 +76,7 @@ class AdsListCreate(ListView, CreateView):
     model = Advertisement
 
     def get(self, request, *args, **kwargs):
-        qs = self.get_queryset().select_related('author')
+        qs = self.get_queryset().select_related('author').order_by('-price')
         paginator = Paginator(qs, settings.PAGINATOR_DEFAULT_ITEMS)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)

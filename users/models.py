@@ -21,6 +21,7 @@ class User(models.Model):
     class Meta:
         verbose_name = 'Юзер'
         verbose_name_plural = 'Юзеры'
+        ordering = ('username',)
 
     def __str__(self):
         return self.username
