@@ -127,7 +127,8 @@ class AdsListCreate(ListView, CreateView):
             'is_published': ad.is_published,
             'category_id': ad.category_id,
             'image': ad.image.url if ad.image else None,
-        }, safe=False)
+        }, safe=False, status=status.HTTP_201_CREATED)
+
 
 class AdUpdateRetrieveView(DetailView, UpdateView, DeleteView):
     model = Advertisement
@@ -176,6 +177,7 @@ class AdUpdateRetrieveView(DetailView, UpdateView, DeleteView):
 
         return JsonResponse({"status": "ok"}, status=status.HTTP_204_NO_CONTENT)
 
+
 class UploadAdImageView(UpdateView):
     model = Advertisement
     fields = ['image']
@@ -196,4 +198,4 @@ class UploadAdImageView(UpdateView):
             'is_published': self.object.is_published,
             'category_id': self.object.category_id,
             'image': self.object.image.url if self.object.image else None,
-        })
+        }, status=status.HTTP_201_CREATED)
