@@ -3,13 +3,13 @@ from django.db import models
 
 class Advertisement(models.Model):
     name = models.CharField(max_length=100)
-    author = models.ForeignKey('users.User', null=True, blank=True, on_delete=models.SET_NULL,
+    author = models.ForeignKey('users.User', null=True, blank=True, on_delete=models.CASCADE,
                                related_name='advertisements')
-    price = models.DecimalField(max_digits=20, decimal_places=6)
+    price = models.DecimalField(max_digits=20, decimal_places=2)
     description = models.TextField(null=True, blank=True)
     is_published = models.BooleanField()
     image = models.ImageField(upload_to='images', null=True, blank=True)
-    category = models.ForeignKey(to='Category', blank=True, null=True, on_delete=models.SET_NULL)
+    category = models.ForeignKey(to='Category', blank=True, null=True, on_delete=models.RESTRICT)
 
     class Meta:
         verbose_name = 'Объява'

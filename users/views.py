@@ -36,7 +36,7 @@ class UserListCreateView(CreateView, ListView):
                 'total_ads': user.total_ads,
                 'locations': list(map(str, user.locations.all()))
             } for user in page_obj]
-        }, safe=False, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
     def post(self, request, *args, **kwargs):
         user_data = json.loads(request.body)
@@ -61,7 +61,7 @@ class UserListCreateView(CreateView, ListView):
             'role': user.role,
             'age': user.age,
             'locations': list(map(str, user.locations.all())),
-        }, safe=False, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
 
 class UserRUDView(DetailView, UpdateView, DeleteView):
@@ -78,7 +78,7 @@ class UserRUDView(DetailView, UpdateView, DeleteView):
             'role': user.role,
             'age': user.age,
             'locations': list(map(str, user.locations.all())),
-        }, safe=False)
+        })
 
     def patch(self, request, *args, **kwargs):
         super().post(request, *args, **kwargs)

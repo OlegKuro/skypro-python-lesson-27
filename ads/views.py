@@ -14,7 +14,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 
 def index(_):
-    return JsonResponse({'status': status.HTTP_200_OK}, safe=False)
+    return JsonResponse({'status': status.HTTP_200_OK})
 
 
 class CategoriesListCreate(ListView, CreateView):
@@ -40,7 +40,7 @@ class CategoriesListCreate(ListView, CreateView):
         return JsonResponse({
             'id': category.pk,
             'name': category.name,
-        }, safe=False, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
 
 class CategoryRetrieveUpdateView(DetailView, UpdateView, DeleteView):
@@ -52,7 +52,7 @@ class CategoryRetrieveUpdateView(DetailView, UpdateView, DeleteView):
         return JsonResponse({
             'id': category.pk,
             'name': category.name,
-        }, safe=False)
+        })
 
     def patch(self, request, *args, **kwargs):
         super().post(request, *args, **kwargs)
@@ -95,7 +95,7 @@ class AdsListCreate(ListView, CreateView):
                 'category_id': ad.category_id,
                 'image': ad.image.url if ad.image else None,
             } for ad in page_obj]
-        }, safe=False)
+        })
 
     def post(self, request, *args, **kwargs):
         ad_data = json.loads(request.body)
@@ -127,7 +127,7 @@ class AdsListCreate(ListView, CreateView):
             'is_published': ad.is_published,
             'category_id': ad.category_id,
             'image': ad.image.url if ad.image else None,
-        }, safe=False, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
 
 class AdUpdateRetrieveView(DetailView, UpdateView, DeleteView):
@@ -146,7 +146,7 @@ class AdUpdateRetrieveView(DetailView, UpdateView, DeleteView):
             'is_published': ad.is_published,
             'category_id': ad.category_id,
             'image': ad.image.url if ad.image else None,
-        }, safe=False)
+        })
 
     def patch(self, request, *args, **kwargs):
         super().post(request, *args, **kwargs)
@@ -198,4 +198,4 @@ class UploadAdImageView(UpdateView):
             'is_published': self.object.is_published,
             'category_id': self.object.category_id,
             'image': self.object.image.url if self.object.image else None,
-        }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_200_OK)
