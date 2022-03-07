@@ -1,181 +1,54 @@
-import json
-
-from django.core.paginator import Paginator
-from django.db import IntegrityError
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from rest_framework.viewsets import ModelViewSet
+from rest_framework import generics
 
-from ads.models import Advertisement, Category
-from lesson27 import settings
-from users.models import User
+from ads.models import Advertisement, Category, Location
+from ads.serializers import LocationSerializer, AdvertisementSerializer, CategorySerializer
 from rest_framework import status
 
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import UpdateView
 
 
 def index(_):
     return JsonResponse({'status': status.HTTP_200_OK})
 
 
-class CategoriesListCreate(ListView, CreateView):
-    model = Category
-
-    def get(self, *args, **kwargs):
-        return JsonResponse([{
-            'id': cat.pk,
-            'name': cat.name,
-        } for cat in self.get_queryset().order_by('name')], safe=False)
-
-    def post(self, request, *args, **kwargs):
-        category_data = json.loads(request.body)
-
-        try:
-            category = Category.objects.create(**category_data)
-        except TypeError:
-            return JsonResponse({'error': 'validation error ¯\_(ツ)_/¯'}, status=status.HTTP_403_FORBIDDEN)
-        except IntegrityError:
-            return JsonResponse({'error': 'probably it\'s constraint violation (｡•̀ᴗ-)✧'},
-                                status=status.HTTP_403_FORBIDDEN)
-
-        return JsonResponse({
-            'id': category.pk,
-            'name': category.name,
-        }, status=status.HTTP_201_CREATED)
+class CategoriesListCreate(generics.ListCreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 
-class CategoryRetrieveUpdateView(DetailView, UpdateView, DeleteView):
-    model = Category
-    success_url = '/'
-
-    def get(self, *args, **kwargs):
-        category: Category = self.get_object()
-        return JsonResponse({
-            'id': category.pk,
-            'name': category.name,
-        })
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-
-        category_data = json.loads(request.body)
-        self.object.name = category_data['name']
-        self.object.save()
-
-        return JsonResponse({
-            'id': self.object.id,
-            'name': self.object.name,
-        })
-
-    def delete(self, request, *args, **kwargs):
-        super().delete(request, *args, **kwargs)
-
-        return JsonResponse({"status": "ok"}, status=status.HTTP_204_NO_CONTENT)
+class CategoryRetrieveUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 
-class AdsListCreate(ListView, CreateView):
-    model = Advertisement
+class AdsListCreate(generics.ListCreateAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
 
-    def get(self, request, *args, **kwargs):
-        qs = self.get_queryset().select_related('author').order_by('-price')
-        paginator = Paginator(qs, settings.PAGINATOR_DEFAULT_ITEMS)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
+    def get_queryset(self):
+        qs = self.queryset
+        param_getter = lambda param_name: self.request.query_params.get(param_name)
+        categories = self.request.query_params.getlist('category_id')
+        text = param_getter('text')
+        location = param_getter('location')
+        price_range = param_getter('price_from'), param_getter('price_to')
 
-        return JsonResponse({
-            'num_pages': page_obj.paginator.num_pages,
-            'total': page_obj.paginator.count,
-            'items': [{
-                'id': ad.id,
-                'name': ad.name,
-                'author_id': ad.author_id,
-                'author': ad.author.first_name,
-                'price': ad.price,
-                'description': ad.description,
-                'is_published': ad.is_published,
-                'category_id': ad.category_id,
-                'image': ad.image.url if ad.image else None,
-            } for ad in page_obj]
-        })
-
-    def post(self, request, *args, **kwargs):
-        ad_data = json.loads(request.body)
-
-        author = get_object_or_404(User, ad_data['author_id'])
-        category = get_object_or_404(Category, ad_data['category_id'])
-
-        try:
-            ad = Advertisement.objects.create({
-                **ad_data,
-                **{
-                    'author': author,
-                    'category': category,
-                }
-            })
-        except TypeError:
-            return JsonResponse({'error': 'validation error ¯\_(ツ)_/¯'}, status=status.HTTP_403_FORBIDDEN)
-        except IntegrityError:
-            return JsonResponse({'error': 'probably it\'s constraint violation (｡•̀ᴗ-)✧'},
-                                status=status.HTTP_403_FORBIDDEN)
-
-        return JsonResponse({
-            'id': ad.id,
-            'name': ad.name,
-            'author_id': ad.author_id,
-            'author': ad.author.first_name,
-            'price': ad.price,
-            'description': ad.description,
-            'is_published': ad.is_published,
-            'category_id': ad.category_id,
-            'image': ad.image.url if ad.image else None,
-        }, status=status.HTTP_201_CREATED)
+        if len(categories):
+            qs = qs.filter(category__pk__in=categories)
+        if text:
+            qs = qs.filter(name__icontains=text)
+        if location:
+            qs = qs.filter(author__locations__name__icontains=location)
+        if price_range[0] is not None and price_range[1] is not None:
+            qs = qs.filter(price__range=price_range)
+        return qs
 
 
-class AdUpdateRetrieveView(DetailView, UpdateView, DeleteView):
-    model = Advertisement
-    success_url = '/'
-
-    def get(self, *args, **kwargs):
-        ad: Advertisement = self.get_object()
-        return JsonResponse({
-            'id': ad.id,
-            'name': ad.name,
-            'author_id': ad.author_id,
-            'author': ad.author.first_name,
-            'price': ad.price,
-            'description': ad.description,
-            'is_published': ad.is_published,
-            'category_id': ad.category_id,
-            'image': ad.image.url if ad.image else None,
-        })
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-
-        ad_data = json.loads(request.body)
-        self.object.name = ad_data["name"]
-        self.object.price = ad_data["price"]
-        self.object.description = ad_data["description"]
-
-        self.object.author = get_object_or_404(User, ad_data["author_id"])
-        self.object.category = get_object_or_404(Category, ad_data["category_id"])
-
-        self.object.save()
-        return JsonResponse({
-            'id': self.object.id,
-            'name': self.object.name,
-            'author_id': self.object.author_id,
-            'author': self.object.author.first_name,
-            'price': self.object.price,
-            'description': self.object.description,
-            'is_published': self.object.is_published,
-            'category_id': self.object.category_id,
-            'image': self.object.image.url if self.object.image else None,
-        })
-
-    def delete(self, request, *args, **kwargs):
-        super().delete(request, *args, **kwargs)
-
-        return JsonResponse({"status": "ok"}, status=status.HTTP_204_NO_CONTENT)
+class AdUpdateRetrieveView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Advertisement.objects.all()
+    serializer_class = AdvertisementSerializer
 
 
 class UploadAdImageView(UpdateView):
@@ -199,3 +72,8 @@ class UploadAdImageView(UpdateView):
             'category_id': self.object.category_id,
             'image': self.object.image.url if self.object.image else None,
         }, status=status.HTTP_200_OK)
+
+
+class LocationViewSet(ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
