@@ -1,9 +1,11 @@
 from django.http import JsonResponse
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import generics
+from rest_framework import generics, permissions
 
 from ads.models import Advertisement, Category, Location
+from ads.permissions import AdOwnerOrHasRoles
 from ads.serializers import LocationSerializer, AdvertisementSerializer, CategorySerializer
+from users.models import User
 from rest_framework import status
 
 from django.views.generic import UpdateView
@@ -46,9 +48,16 @@ class AdsListCreate(generics.ListCreateAPIView):
         return qs
 
 
-class AdUpdateRetrieveView(generics.RetrieveUpdateDestroyAPIView):
+class AdRUDView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Advertisement.objects.all()
     serializer_class = AdvertisementSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            # как и написано в домашке, закрывыаю тока для чтения
+            # иначе влепил бы permission_class = [permissions.IsAuthenticated]
+            return [permissions.IsAuthenticated()]
+        return AdOwnerOrHasRoles(User.ROLE_ADMIN, User.ROLE_MODERATOR)
 
 
 class UploadAdImageView(UpdateView):

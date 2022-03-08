@@ -1,5 +1,5 @@
 from django.urls import path
-from ads.views import (index, AdsListCreate, CategoriesListCreate, CategoryRetrieveUpdateView, AdUpdateRetrieveView,
+from ads.views import (index, AdsListCreate, CategoriesListCreate, CategoryRetrieveUpdateView, AdRUDView,
                        UploadAdImageView, LocationViewSet)
 from rest_framework.routers import DefaultRouter
 
@@ -11,6 +11,6 @@ urlpatterns = [
     path('cat/', CategoriesListCreate.as_view()),
     path('cat/<int:pk>/', CategoryRetrieveUpdateView.as_view()),
     path('ad/', AdsListCreate.as_view()),
-    path('ad/<int:pk>/', AdUpdateRetrieveView.as_view()),
+    path('ad/<int:pk>/', AdRUDView.as_view()),
     path('ad/<int:pk>/upload_image', UploadAdImageView.as_view()),
 ] + router.urls
