@@ -1,4 +1,6 @@
 from rest_framework import generics, permissions
+from rest_framework.generics import DestroyAPIView
+
 from selections.models import Selection
 from selections import serializers as selection_serializers
 from selections.permissions import IsSelectionAuthor
@@ -20,7 +22,7 @@ class SelectionCreateView(generics.CreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
 
-class SelectionUpdateDeleteView(generics.DestroyAPIView, generics.UpdateAPIView):
+class SelectionUpdateDeleteView(DestroyAPIView, generics.UpdateAPIView):
     queryset = Selection.objects.all()
     serializer_class = selection_serializers.SelectionCreateUpdateView
     permission_classes = (IsSelectionAuthor,)
